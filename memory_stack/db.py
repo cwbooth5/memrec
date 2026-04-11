@@ -68,6 +68,14 @@ class SqliteDB:
         )
         """)
 
+        # Thread titles (LLM-generated short labels)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS thread_titles (
+            thread_id TEXT PRIMARY KEY,
+            title TEXT
+        )
+        """)
+
         self.conn.commit()
 
     def execute(self, sql: str, params: Iterable[Any] = ()):

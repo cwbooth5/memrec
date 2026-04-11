@@ -230,3 +230,41 @@ class ConversationStore:
             """,
             (thread_id, summary),
         )
+
+    def list_threads(self, limit: int = 50) -> list[dict]:
+        """Return all thread IDs sorted by most-recently-updated, with message counts."""
+        rows = self.db.query(
+            """
+            SELECT thread_id, MAX(ts) AS last_ts, COUNT(*) AS msg_count
+            FROM messages
+            GROUP BY thread_id
+            ORDER BY MAX(ts) DESC
+            LIMIT ?
+            """,
+            (limit,),
+        )
+        return [
+            {"thread_id": r["thread_id"], "last_ts": r["last_ts"], "msg_count": r["msg_count"]}
+            for r in rows
+        ]
+
+    def get_all(self, thread_id: str) -> list[dict]:
+        """Return every message in a thread in chronological order."""
+        rows = self.db.query(
+            "SELECT role, content, ts FROM messages WHERE thread_id = ? ORDER BY id ASC",
+            (thread_id,),
+        )
+        return [{"role": r["role"], "content": r["content"], "ts": r["ts"]} for r in rows]
+
+    def get_title(self, thread_id: str) -> Optional[str]:
+        rows = self.db.query(
+            "SELECT title FROM thread_titles WHERE thread_id = ?",
+            (thread_id,),
+        )
+        return rows[0]["title"] if rows else None
+
+    def set_title(self, thread_id: str, title: str) -> None:
+        self.db.execute(
+            "INSERT OR REPLACE INTO thread_titles (thread_id, title) VALUES (?, ?)",
+            (thread_id, title),
+        )

@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "memrec"
 version = "0.1.0"
@@ -5,3 +9,6 @@ description = "A memory stack for agents"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[tool.setuptools]
+packages = ["memory_stack"]
