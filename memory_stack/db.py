@@ -76,6 +76,12 @@ class SqliteDB:
         )
         """)
 
+        # Add events_json column to messages if it doesn't exist yet (migration).
+        try:
+            cur.execute("ALTER TABLE messages ADD COLUMN events_json TEXT DEFAULT '[]'")
+        except Exception:
+            pass  # column already exists
+
         self.conn.commit()
 
     def execute(self, sql: str, params: Iterable[Any] = ()):

@@ -249,12 +249,38 @@ class ConversationStore:
         ]
 
     def get_all(self, thread_id: str) -> list[dict]:
-        """Return every message in a thread in chronological order."""
+        """Return every message in a thread in chronological order, including events."""
+        import json as _json
+
         rows = self.db.query(
-            "SELECT role, content, ts FROM messages WHERE thread_id = ? ORDER BY id ASC",
+            "SELECT role, content, ts, events_json FROM messages WHERE thread_id = ? ORDER BY id ASC",
             (thread_id,),
         )
-        return [{"role": r["role"], "content": r["content"], "ts": r["ts"]} for r in rows]
+        result = []
+        for r in rows:
+            raw = r["events_json"] if r["events_json"] else "[]"
+            try:
+                events = _json.loads(raw)
+            except Exception:
+                events = []
+            result.append(
+                {"role": r["role"], "content": r["content"], "ts": r["ts"], "events": events}
+            )
+        return result
+
+    def set_events(self, thread_id: str, events_json: str) -> None:
+        """Attach serialised events to the most recent assistant message in a thread."""
+        self.db.execute(
+            """
+            UPDATE messages SET events_json = ?
+            WHERE id = (
+                SELECT id FROM messages
+                WHERE thread_id = ? AND role = 'assistant'
+                ORDER BY id DESC LIMIT 1
+            )
+            """,
+            (events_json, thread_id),
+        )
 
     def get_title(self, thread_id: str) -> Optional[str]:
         rows = self.db.query(
