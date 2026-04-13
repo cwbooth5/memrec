@@ -8,7 +8,7 @@ from typing import Any, Iterable
 class SqliteDB:
     def __init__(self, path: str = "memory.sqlite"):
         self.path = Path(path)
-        self.conn = sqlite3.connect(self.path)
+        self.conn = sqlite3.connect(self.path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._init_schema()
 
