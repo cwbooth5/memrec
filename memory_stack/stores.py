@@ -282,6 +282,27 @@ class ConversationStore:
             (events_json, thread_id),
         )
 
+    def search_messages(self, query: str, limit: int = 50) -> list[dict]:
+        """Full-text LIKE search across all conversation messages.
+
+        Returns rows sorted newest-first, each with thread_id, thread_title,
+        role, content (full), and ts.  The caller is responsible for extracting
+        a display excerpt.
+        """
+        rows = self.db.query(
+            """
+            SELECT m.thread_id, m.role, m.content, m.ts,
+                   COALESCE(t.title, m.thread_id) AS thread_title
+            FROM messages m
+            LEFT JOIN thread_titles t ON m.thread_id = t.thread_id
+            WHERE m.content LIKE ? AND m.role IN ('user', 'assistant')
+            ORDER BY m.ts DESC
+            LIMIT ?
+            """,
+            (f"%{query}%", limit),
+        )
+        return [dict(r) for r in rows]
+
     def get_title(self, thread_id: str) -> Optional[str]:
         rows = self.db.query(
             "SELECT title FROM thread_titles WHERE thread_id = ?",
